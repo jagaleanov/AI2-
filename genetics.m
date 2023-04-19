@@ -3,41 +3,41 @@ clear all
 clc
 close all
 
-disp('ALGORTÍMO GENÉTICO');
+disp('ALGORÍTMO GENÉTICO');
 
 % Definir valores predefinidos
-matrix_type_input = 2; % 1 para pirámide, 2 para foso
+matrix_type_input = 1; % 1 para pirámide, 2 para foso
 use_recombination_input = 1; % 1 para si, 2 para no
-selection_method_input = 3; % 1 para torneo, 2 para ruleta, 3 para rango
+selection_method_input = 1; % 1 para torneo, 2 para ruleta, 3 para rango, 4 para rango con diversidad
 max_generations_input = 1000;
-executions_input = 1;
+executions_input = 1000;
 range_probability_input = 2/3;
-print_process_input = 1; % 1 para si, 2 para no
+print_process_input = 2; % 1 para si, 2 para no
 
 % Preguntar al usuario si desea usar los valores predefinidos
-use_default_values = input('Desea utilizar los valores predefinidos?\n1) Sí\n2) No\nIngrese el número correspondiente: ');
+use_default_values = input('¿Desea utilizar los valores predefinidos?\n1) Sí\n2) No\nIngrese el número correspondiente: ');
 
 if use_default_values == 2
     % Pedir al usuario los valores de las variables
-    matrix_type_input = input('Seleccione el tipo de matriz de calidad que desea utilizar:\n1) Pirámide \n2) Foso \nIngrese el número correspondiente: ');
-    use_recombination_input = input('¿Desea utilizar la recombinación de cromosomas?\n1) Sí\n2) No\nIngrese el número correspondiente: ');
+    matrix_type_input = input('\nSeleccione el tipo de matriz de calidad que desea utilizar:\n1) Pirámide \n2) Foso \nIngrese el número correspondiente: ');
+    use_recombination_input = input('\n¿Desea utilizar la recombinación de cromosomas?\n1) Sí\n2) No\nIngrese el número correspondiente: ');
 
-    selection_method_input = input('Seleccione el método de selección que desea utilizar:\n1) Torneo\n2) Ruleta\n3) Rango\nIngrese el número correspondiente: ');
+    selection_method_input = input('\n¿Qué método de selección desea utilizar?:\n1) Torneo\n2) Ruleta\n3) Rango\n4) Calidad y diversidad\nIngrese el número correspondiente: ');
     selection_method = selection_method_input;
-    max_generations_input = input('Ingrese el número máximo de generaciones: ');
-    executions_input = input('Ingrese el número de ejecuciones: ');
+    max_generations_input = input('\nIngrese el número máximo de generaciones: ');
+    executions_input = input('\nIngrese el número de ejecuciones: ');
     executions = executions_input;
 
     range_probability_input = 0;
 
-    if selection_method_input == 3
-        range_probability_input = input('Ingrese la probabilidad de selección para el método de rango (0 a 1): ');
+    if selection_method_input == 3 ||  selection_method_input == 4
+        range_probability_input = input('\nIngrese la probabilidad de selección para el método de rango (0 a 1): ');
     end
 
     print_process_input = 2;
 
     if executions_input < 10
-        print_process_input = input('¿Desea imprimir el proceso de la ejecución?\n1) Sí\n2) No\nIngrese el número correspondiente: ');
+        print_process_input = input('\n¿Desea imprimir el proceso de la ejecución?\n1) Sí\n2) No\nIngrese el número correspondiente: ');
     end
 
 end
@@ -51,8 +51,8 @@ if ~(use_recombination_input == 1 || use_recombination_input == 2)
     error('El número ingresado para la utilización de la recombinación no es válido. Debe ser 1 o 2.');
 end
 
-if ~(selection_method_input == 1 || selection_method_input == 2 || selection_method_input == 3)
-    error('El número ingresado para el método de selección no es válido. Debe ser 1, 2 o 3.');
+if ~(selection_method_input == 1 || selection_method_input == 2 || selection_method_input == 3 || selection_method_input == 4)
+    error('El número ingresado para el método de selección no es válido. Debe ser 1, 2, 3 o 4.');
 end
 
 if max_generations_input <= 0
@@ -210,12 +210,12 @@ for c = 1:executions
                     break; % Salir del bucle de generaciones
                 end
 
-                % Seleccionar la siguiente generación
                 if print_process
                     disp('Puntajes:');
                     disp(chromosome_scores);
                 end
 
+                % Seleccionar la siguiente generación
                 [unique_candidates, ia, ~] = unique(candidates, 'rows'); % Eliminar cromosomas repetidos
                 unique_scores = chromosome_scores(ia); % Obtener puntajes de los cromosomas únicos
                 [~, indices] = sort(unique_scores, 'descend'); % Ordenar puntajes únicos de forma descendente
@@ -251,18 +251,15 @@ for c = 1:executions
                 end
 
                 % Calcular probabilidades de selección
-                % Se calcula la probabilidad de selección de cada candidato en función de su puntuación
                 selection_probabilities = chromosome_scores / sum(chromosome_scores);
                 [selection_probabilities, selected_indices] = sort(selection_probabilities, 'descend');
 
-                % Mostrar las probabilidades de selección si se especifica print_process
                 if print_process
                     disp('Probabilidades de selección:');
                     disp(selection_probabilities);
                 end
 
                 % Seleccionar supervivientes
-                % Seleccionamos los supervivientes de la generación actual
                 selected_candidates = zeros(4, 2);
 
                 if length(find(chromosome_scores)) <= 4
@@ -296,11 +293,11 @@ for c = 1:executions
                 % Actualizamos la población con los supervivientes seleccionados
                 population = selected_candidates;
                 % FIN RULETA RUSA------------------------
-            otherwise
+            case 3
                 selection_method = 'rango';
                 % METODO RANGO------------------------
-                % Evaluar candidatos
-                chromosome_scores = zeros(size(candidates, 1), 1); % Lista de puntuaciones de los cromosomas
+                [candidates, ~, unique_indices] = unique(candidates, 'rows'); % Eliminar cromosomas repetidos
+                chromosome_scores = zeros(size(candidates, 1), 1); % Lista de puntuaciones de los cromosomas inicial en 0
 
                 for i = 1:size(candidates, 1) % Recorrer la lista de candidatos
                     chromosome = candidates(i, :); % Obtener el cromosoma actual
@@ -324,17 +321,170 @@ for c = 1:executions
                 end
 
                 % Seleccionar la siguiente generación
-                if print_process
-                    disp('Puntajes:');
-                    disp(chromosome_scores);
+                selection_probabilities = chromosome_scores / sum(chromosome_scores);
+                p = range_probability; % p arbitrario
+                [selection_probabilities, selected_indices] = sort(selection_probabilities, 'descend');
+                sumrango = p;
+                selection_probabilities(1) = p;
+
+                for i = 1:length(candidates) - 1
+
+                    if (i ~= length(candidates) - 1)
+                        p = (1 - sumrango) * range_probability;
+                    else
+                        p = 1 - sumrango;
+                    end
+
+                    sumrango = sumrango + p;
+                    selection_probabilities(i + 1) = p;
                 end
 
-                [unique_candidates, unique_indices, ~] = unique(candidates, 'rows'); % Eliminar cromosomas repetidos
-                unique_scores = chromosome_scores(unique_indices); % Obtener puntajes de los cromosomas únicos
-                [~, sorted_indices] = sort(unique_scores, 'descend'); % Ordenar puntajes únicos de forma descendente
-                selected_candidates = unique_candidates(sorted_indices(1:min(4, end)), :); % Seleccionar los mejores cromosomas únicos para la siguiente generación
-                population = selected_candidates; % Actualizar la población con los supervivientes seleccionados
+                if print_process
+                    disp('Probabilidades:');
+                    disp(selection_probabilities);
+                end
+
+                selected = zeros(4, 2); % Inicialización de supervivientes seleccionados
+
+                if length(candidates) <= 4
+                    selected = candidates;
+                else
+                    counter = 1;
+
+                    while counter <= 4 % Seleccionar 4 supervivientes
+                        random_number = rand(); % Generación de un número aleatorio entre 0 y 1
+                        j = 1; % Inicialización del índice del candidato
+                        accumulated_probability = selection_probabilities(j); % Inicialización de la acumulación de probabilidad
+
+                        % Ciclo mientras la acumulación de probabilidad es menor al número aleatorio generado
+                        while accumulated_probability < random_number
+                            j = j + 1; % Aumentar el índice del candidato
+                            accumulated_probability = accumulated_probability + selection_probabilities(j); % Acumulación de probabilidad para el candidato actual
+                        end
+
+                        if ~ismember(candidates(selected_indices(j), :), selected, 'rows')
+                            selected(counter, :) = candidates(selected_indices(j), :);
+                            counter = counter + 1;
+                        end
+
+                    end
+
+                end
+
+                population = selected; % Actualizar la población con los supervivientes seleccionados
                 % FIN RANGO------------------------
+            case 4
+                selection_method = 'rango con diversidad';
+                % METODO RANGO DE CALIDAD Y DIVERSIDAD------------------------
+                [candidates, ~, unique_indices] = unique(candidates, 'rows'); % Eliminar cromosomas repetidos
+                chromosome_scores = zeros(size(candidates, 1), 1); % Lista de puntuaciones de los cromosomas inicial en 0
+                diversity_scores = zeros(size(candidates, 1), 1); % Lista de puntuaciones de los cromosomas inicial en 0
+                selected_chromosomes = []; % Almacenar los cromosomas seleccionados previamente
+
+                for i = 1:size(candidates, 1) % Recorrer la lista de candidatos
+                    chromosome = candidates(i, :); % Obtener el cromosoma actual
+                    score = quality(chromosome(1), chromosome(2)); % Calcular la calidad del cromosoma en función de la matriz de calidad
+                    chromosome_scores(i) = score; % Asignar la puntuación resultante a la lista de puntuaciones
+                end
+
+                % Comprobar si calidad == 9
+                if max(chromosome_scores) == 9
+                    best_chromosome = candidates(chromosome_scores == max(chromosome_scores), :); % Seleccionar el mejor cromosoma
+
+                    if num_generations < min_generations_total
+                        min_generations_total = num_generations; % Actualizar el mínimo de generaciones
+                    end
+
+                    if num_generations > max_generations_total
+                        max_generations_total = num_generations; % Actualizar el máximo de generaciones
+                    end
+
+                    break; % Salir del bucle de generaciones
+                end
+
+                [~, sorted_indices] = sort(chromosome_scores, 'descend'); % Ordenar puntajes únicos de forma descendente
+                best_candidate = candidates(sorted_indices(1), :); % Seleccionar los mejores cromosomas únicos para la siguiente generación
+
+                if print_process
+                    disp('Mejor candidato encontrado:');
+                    disp(best_candidate);
+                end
+
+                for i = 1:size(candidates, 1) % Recorrer la lista de candidatos
+                    chromosome = candidates(i, :); % Obtener el cromosoma actual
+
+                    if chromosome == best_candidate
+                        diversity_score = 0;
+                    else
+                        chromosome = candidates(i, :); % Obtener el cromosoma actual
+                        diversity_score = 1 / (norm(chromosome - best_candidate) ^ 2); % Calcular la diversidad del cromosoma
+                    end
+
+                    diversity_scores(i) = diversity_score; % Asignar la puntuación resultante a la lista de puntuaciones
+                end
+
+                % Calcular la suma de las puntuaciones de calidad y diversidad para cada cromosoma
+                combined_scores = chromosome_scores + diversity_scores;
+
+                if print_process
+                    disp('Suma de puntajes:');
+                    disp(combined_scores);
+                end
+
+                % Seleccionar la siguiente generación
+                selection_probabilities = combined_scores / sum(combined_scores);
+                p = range_probability; % p arbitrario
+                [selection_probabilities, selected_indices] = sort(selection_probabilities, 'descend');
+                sumrango = p;
+                selection_probabilities(1) = p;
+
+                for i = 1:length(candidates) - 1
+
+                    if (i ~= length(candidates) - 1)
+                        p = (1 - sumrango) * range_probability;
+                    else
+                        p = 1 - sumrango;
+                    end
+
+                    sumrango = sumrango + p;
+                    selection_probabilities(i + 1) = p;
+                end
+
+                if print_process
+                    disp('Probabilidades:');
+                    disp(selection_probabilities);
+                end
+
+                selected = zeros(4, 2); % Inicialización de supervivientes seleccionados
+
+                if length(candidates) <= 4
+                    selected = candidates;
+                else
+                    counter = 1;
+
+                    while counter <= 4 % Seleccionar 4 supervivientes
+                        random_number = rand(); % Generación de un número aleatorio entre 0 y 1
+                        j = 1; % Inicialización del índice del candidato
+                        accumulated_probability = selection_probabilities(j); % Inicialización de la acumulación de probabilidad
+
+                        % Ciclo mientras la acumulación de probabilidad es menor al número aleatorio generado
+                        while accumulated_probability < random_number
+                            j = j + 1; % Aumentar el índice del candidato
+                            accumulated_probability = accumulated_probability + selection_probabilities(j); % Acumulación de probabilidad para el candidato actual
+                        end
+
+                        if ~ismember(candidates(selected_indices(j), :), selected, 'rows')
+                            selected(counter, :) = candidates(selected_indices(j), :);
+                            counter = counter + 1;
+                        end
+
+                    end
+
+                end
+
+                population = selected; % Actualizar la población con los supervivientes seleccionados
+
+                % FIN RANGO DE CALIDAD Y DIVERSIDAD------------------------
         end
 
     end
@@ -366,27 +516,27 @@ end
 
 fprintf('\nProceso finalizado.\n');
 
-fprintf('\nResultados:\n');
+fprintf('\n\nResultados:\n');
 
 if matrix_type == 1
-    fprintf('Se utilizo la matriz de piramide.\n');
+    fprintf('Se utilizó la matriz de calidad en forma de piramide.\n');
 else
-    fprintf('Se utilizo la matriz de foso.\n');
+    fprintf('Se utilizó la matriz de calidad en forma de foso.\n');
 end
 
 if use_recombination
-    fprintf('Se utilizaron las operaciones de mutación y recombinación.\n');
+    fprintf('Se utilizaron las operaciones de recombinación monopunto y mutación.\n');
 else
     fprintf('Sólo se utilizó la operacion de mutación.\n');
 end
 
 fprintf('Se utilizó el método de selección por %s.\n', selection_method);
 fprintf('Se realizaron un total de %d ejecuciones.\n', executions);
-fprintf('Cada ejecución tuvo máximo %d generaciones.\n', max_generations);
-fprintf('En %d ejecuciones se encontraron %d soluciónes.\n', executions, solutions_counter);
+fprintf('En cada ejecución se busco la solución hasta un máximo de %d generaciones.\n', max_generations);
+fprintf('En %d ejecuciones se encontraron %d soluciones equivalentes al %f%%.\n', executions, solutions_counter, solutions_counter*100/executions);
+fprintf('El número mínimo de generaciones necesarias para encontrar la solución fue %d.\n', min_generations_total);
 fprintf('El promedio de generaciones necesarias para encontrar la solución fue %f.\n', accum_generations_counter / solutions_counter);
-fprintf('El número mínimo de generaciones necesarias para encontrar la solución fue %d\n', min_generations_total);
-fprintf('El número máximo de generaciones necesarias para encontrar la solución fue %d\n', max_generations_total);
+fprintf('El número máximo de generaciones necesarias para encontrar la solución fue %d.\n', max_generations_total);
 
 % Funciones
 % Función de mutación
